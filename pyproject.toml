@@ -9,7 +9,7 @@ description = "A CLI for Xiaohongshu (小红书) — search, read notes, view pr
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.8"
-authors = [{ name = "jackwener", email = "jackwener@gmail.com" }]
+authors = [{ name = "jackwener", email = "jakevingoo@gmail.com" }]
 keywords = ["xiaohongshu", "xhs", "cli", "redbook", "小红书"]
 classifiers = [
     "Development Status :: 3 - Alpha",
