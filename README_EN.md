@@ -56,6 +56,20 @@ uv sync
 
 </details>
 
+## One-Command Local Smoke Test
+
+With a valid saved session (`~/.xhs-cli/cookies.json`), run:
+
+```bash
+./scripts/smoke_local.sh
+```
+
+You can pass extra pytest arguments, for example:
+
+```bash
+./scripts/smoke_local.sh -k whoami
+```
+
 ## Usage
 
 ### Login

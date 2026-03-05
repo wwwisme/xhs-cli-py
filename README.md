@@ -56,6 +56,20 @@ uv sync
 
 </details>
 
+## 本地一键冒烟测试
+
+在本地已登录（有 `~/.xhs-cli/cookies.json`）的情况下，直接运行：
+
+```bash
+./scripts/smoke_local.sh
+```
+
+可选地传递 pytest 参数（例如只跑某个用例）：
+
+```bash
+./scripts/smoke_local.sh -k whoami
+```
+
 ## 使用
 
 ### 登录
