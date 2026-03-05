@@ -3,7 +3,7 @@
 **中文** | [English](README_EN.md)
 
 [![PyPI](https://img.shields.io/pypi/v/xhs-cli)](https://pypi.org/project/xhs-cli/)
-[![License](https://img.shields.io/github/license/jackwener/xhs-cli)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 小红书命令行工具 — 在终端中搜索笔记、查看主页、点赞、收藏、评论。
 
