@@ -50,6 +50,7 @@ dev = [
 [tool.pytest.ini_options]
 markers = [
     "integration: requires valid login session (deselect with '-m \"not integration\"')",
+    "live_mutation: integration tests that may mutate account state (like/favorite/comment/post)",
 ]
 addopts = "-m 'not integration'"
 

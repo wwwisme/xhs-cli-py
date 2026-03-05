@@ -10,5 +10,10 @@ if ! uv run python -m xhs_cli.cli status >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "[smoke] running integration smoke tests..."
-uv run pytest tests/test_integration.py -v --override-ini="addopts=" -m integration "$@"
+MARK_EXPR="integration and not live_mutation"
+if [[ "${XHS_SMOKE_MUTATION:-0}" == "1" ]]; then
+  MARK_EXPR="integration"
+fi
+
+echo "[smoke] running integration smoke tests with marker: $MARK_EXPR"
+uv run pytest tests/test_integration.py -v --override-ini="addopts=" -m "$MARK_EXPR" "$@"

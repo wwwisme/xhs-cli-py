@@ -70,6 +70,23 @@ You can pass extra pytest arguments, for example:
 ./scripts/smoke_local.sh -k whoami
 ```
 
+By default, only non-mutating smoke is executed
+(`integration and not live_mutation`). To also verify
+`like/favorite/comment/post`, opt in explicitly:
+
+```bash
+XHS_SMOKE_MUTATION=1 ./scripts/smoke_local.sh
+```
+
+Optional environment variables:
+
+```bash
+XHS_SMOKE_COMMENT_TEXT="smoke test comment"
+XHS_SMOKE_POST_IMAGES="/abs/a.jpg,/abs/b.jpg"
+XHS_SMOKE_POST_TITLE="smoke title"
+XHS_SMOKE_POST_CONTENT="smoke content"
+```
+
 ## Usage
 
 ### Login

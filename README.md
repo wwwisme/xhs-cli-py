@@ -70,6 +70,22 @@ uv sync
 ./scripts/smoke_local.sh -k whoami
 ```
 
+默认只跑无副作用命令（`integration and not live_mutation`）。如需额外验证
+`like/favorite/comment/post`，显式开启：
+
+```bash
+XHS_SMOKE_MUTATION=1 ./scripts/smoke_local.sh
+```
+
+可选环境变量：
+
+```bash
+XHS_SMOKE_COMMENT_TEXT="smoke test comment"
+XHS_SMOKE_POST_IMAGES="/abs/a.jpg,/abs/b.jpg"
+XHS_SMOKE_POST_TITLE="smoke title"
+XHS_SMOKE_POST_CONTENT="smoke content"
+```
+
 ## 使用
 
 ### 登录
