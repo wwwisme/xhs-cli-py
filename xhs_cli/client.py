@@ -111,28 +111,37 @@ class XhsClient:
         self._page.goto(url, wait_until="domcontentloaded", timeout=20000)
         self._human_wait(1, 2)
 
-        # Wait for __INITIAL_STATE__ to be populated
-        self._wait_for_initial_state()
+        # Wait for search.feeds to be populated by Vue
+        self._wait_for_data(
+            """() => {
+                const s = window.__INITIAL_STATE__;
+                if (!s || !s.search) return false;
+                const f = s.search.feeds;
+                if (!f) return false;
+                const d = f._rawValue || f._value || f.value || f;
+                return Array.isArray(d) && d.length > 0;
+            }""",
+            timeout=15.0,
+            desc="search.feeds",
+        )
 
         # Extract search feeds
-        result = self._page.evaluate("""() => {
-            if (window.__INITIAL_STATE__ &&
-                window.__INITIAL_STATE__.search &&
-                window.__INITIAL_STATE__.search.feeds) {
-                const feeds = window.__INITIAL_STATE__.search.feeds;
-                const feedsData = feeds.value !== undefined ? feeds.value : feeds._value;
-                if (feedsData) {
-                    return JSON.parse(JSON.stringify(feedsData));
-                }
-            }
-            return null;
-        }""")
+        result = self._page.evaluate(
+            """() => {
+"""
+            + UNWRAP_JS
+            + """
+            const s = window.__INITIAL_STATE__;
+            if (!s || !s.search || !s.search.feeds) return null;
+            return unwrap(s.search.feeds, 0);
+        }"""
+        )
 
         if not result:
             logger.warning("No search results found in __INITIAL_STATE__")
             return []
 
-        return result
+        return result if isinstance(result, list) else []
 
     # ===== Note Detail =====
 
@@ -328,9 +337,20 @@ class XhsClient:
             timeout=20000,
         )
         self._human_wait(2, 4)
-
-        self._wait_for_initial_state()
-
+        self._wait_for_data(
+            """() => {
+                const s = window.__INITIAL_STATE__;
+                if (!s) return false;
+                const f = (s.feed && s.feed.feeds) ||
+                          (s.explore && s.explore.feeds) ||
+                          (s.homefeed && s.homefeed.feeds);
+                if (!f) return false;
+                const d = f._rawValue || f._value || f.value || f;
+                return Array.isArray(d) && d.length > 0;
+            }""",
+            timeout=15.0,
+            desc="feed.feeds",
+        )
         # Extract feed from explore page state
         result = self._page.evaluate(
             """() => {
@@ -390,7 +410,18 @@ class XhsClient:
         self._page.goto(url, wait_until="domcontentloaded", timeout=20000)
         self._human_wait(1.5, 3)
 
-        self._wait_for_initial_state()
+        self._wait_for_data(
+            """() => {
+                const s = window.__INITIAL_STATE__;
+                if (!s || !s.search) return false;
+                const t = s.search.topics || s.search.feeds;
+                if (!t) return false;
+                const d = t._rawValue || t._value || t.value || t;
+                return Array.isArray(d) && d.length > 0;
+            }""",
+            timeout=15.0,
+            desc="search.topics",
+        )
 
         # Extract topic search results
         result = self._page.evaluate(
@@ -555,7 +586,19 @@ class XhsClient:
             timeout=15000,
         )
         self._human_wait(1, 2)
-        self._wait_for_initial_state()
+        self._wait_for_data(
+            """() => {
+                const s = window.__INITIAL_STATE__;
+                if (!s) return false;
+                if (s.user && s.user.userPageData) return true;
+                if (s.user && s.user.currentUser) return true;
+                if (s.user && s.user.userInfo) return true;
+                if (s.sidebar && s.sidebar.user) return true;
+                return false;
+            }""",
+            timeout=10.0,
+            desc="user info",
+        )
 
         # Try to extract current user info from homepage state.
         # The data might be in different paths depending on page version.
@@ -997,6 +1040,24 @@ class XhsClient:
                 pass
             time.sleep(0.3)
         logger.warning("__INITIAL_STATE__ not found after %.1fs", timeout)
+
+    def _wait_for_data(self, js_condition: str, timeout: float = 15.0,
+                       desc: str = "data"):
+        """Wait for a JS condition (returning truthy) to be met.
+
+        Used to wait for Vue to asynchronously populate __INITIAL_STATE__
+        sub-keys after initial page load.
+        """
+        start = time.time()
+        while time.time() - start < timeout:
+            try:
+                if self._page.evaluate(js_condition):
+                    logger.debug("%s ready after %.1fs", desc, time.time() - start)
+                    return
+            except Exception:
+                pass
+            time.sleep(0.5)
+        logger.warning("%s not ready after %.1fs", desc, timeout)
 
     def _human_wait(self, min_sec: float = 1.0, max_sec: float = 3.0):
         """Wait a random human-like interval."""
