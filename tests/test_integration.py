@@ -15,6 +15,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 import pytest
 from click.testing import CliRunner
@@ -77,6 +78,27 @@ def _note_cli_args(note: dict[str, str]) -> list[str]:
     if token:
         args.extend(["--xsec-token", token])
     return args
+
+
+def _find_note_id_by_title(user_id: str, title: str) -> str:
+    """Find a recently posted note_id from user-posts JSON output by title."""
+    posts = _run_cli_json("user-posts", user_id, "--json", timeout=120)
+    if not isinstance(posts, list):
+        return ""
+    for item in posts:
+        if not isinstance(item, dict):
+            continue
+        note_card = item.get("note_card", item.get("noteCard", item))
+        if not isinstance(note_card, dict):
+            note_card = item
+        note_title = str(
+            note_card.get("display_title", "")
+            or note_card.get("displayTitle", "")
+            or note_card.get("title", "")
+        )
+        if title and title in note_title:
+            return str(item.get("id", "") or item.get("noteId", "") or item.get("note_id", ""))
+    return ""
 
 
 @pytest.fixture(scope="module")
@@ -192,11 +214,11 @@ class TestUser:
 
 
 class TestFavorites:
-    def test_favorites(self):
+    def test_favorites(self, user_id):
         result = _run_cli("favorites", "--max", "3", timeout=120)
         assert result.returncode == 0, f"favorites failed: {result.stdout}{result.stderr}"
 
-    def test_favorites_json(self):
+    def test_favorites_json(self, user_id):
         data = _run_cli_json("favorites", "--max", "3", "--json", timeout=120)
         assert isinstance(data, list)
 
@@ -230,7 +252,8 @@ class TestMutation:
         assert result.returncode == 0, f"comment failed: {result.stdout}{result.stderr}"
 
     def test_post_optional(self):
-        title = os.getenv("XHS_SMOKE_POST_TITLE", "Smoke test post").strip()
+        title_prefix = os.getenv("XHS_SMOKE_POST_TITLE", "Smoke test post").strip()
+        title = f"{title_prefix} {int(time.time())}"
         content = os.getenv("XHS_SMOKE_POST_CONTENT", "posted by smoke test").strip()
         images_raw = os.getenv("XHS_SMOKE_POST_IMAGES", "").strip()
 
@@ -246,6 +269,24 @@ class TestMutation:
             args.extend(["--image", path])
         if content:
             args.extend(["--content", content])
+        args.append("--json")
 
         result = _run_cli(*args, timeout=180)
+        combined_output = f"{result.stdout}{result.stderr}"
+        if result.returncode != 0 and "Creator platform login required" in combined_output:
+            pytest.skip("creator platform login is not available in current local session")
         assert result.returncode == 0, f"post failed: {result.stdout}{result.stderr}"
+        payload = json.loads(result.stdout)
+        assert payload.get("success") is True
+
+        note_id = str(payload.get("note_id", ""))
+        if not note_id:
+            user_id = _extract_user_id(_run_cli_json("whoami", "--json", timeout=120))
+            if user_id:
+                note_id = _find_note_id_by_title(user_id, title)
+        assert note_id, "post succeeded but note_id could not be resolved"
+
+        delete_result = _run_cli("delete", note_id, timeout=120)
+        assert delete_result.returncode == 0, (
+            f"delete failed: {delete_result.stdout}{delete_result.stderr}"
+        )

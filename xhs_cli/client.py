@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import time
 
 from .exceptions import DataFetchError, LoginError
@@ -72,6 +73,40 @@ class XhsClient:
         if any(indicator.lower() in normalized for indicator in success_indicators):
             return True
         return "publish" not in (current_url or "").lower()
+
+    @staticmethod
+    def _extract_note_id_from_url(url: str) -> str:
+        """Extract note_id from common URL patterns."""
+        if not url:
+            return ""
+        patterns = [
+            r"/explore/([a-zA-Z0-9]+)",
+            r"[?&](?:note_id|noteId|id)=([a-zA-Z0-9]+)",
+            r"/notes?/([a-zA-Z0-9]+)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        return ""
+
+    def _extract_note_id_from_page(self) -> str:
+        """Best-effort note_id extraction from current page links."""
+        try:
+            note_id = self._page.evaluate(
+                """() => {
+                    const links = Array.from(document.querySelectorAll('a[href*="/explore/"]'));
+                    const hrefs = [window.location.href, ...links.map(a => a.href || '')];
+                    for (const href of hrefs) {
+                        const m = href.match(/\\/explore\\/([a-zA-Z0-9]+)/);
+                        if (m && m[1]) return m[1];
+                    }
+                    return "";
+                }"""
+            )
+        except Exception:
+            return ""
+        return str(note_id or "")
 
     def start(self):
         """Launch camoufox and inject cookies."""
@@ -832,8 +867,13 @@ class XhsClient:
 
     # ===== Publish Note =====
 
-    def publish_note(self, title: str, image_paths: list[str],
-                     content: str = "") -> bool:
+    def publish_note(
+        self,
+        title: str,
+        image_paths: list[str],
+        content: str = "",
+        return_detail: bool = False,
+    ) -> bool | dict[str, str | bool]:
         """Publish a new image note on Xiaohongshu.
 
         Navigates to the creator publish page, uploads images via
@@ -857,20 +897,58 @@ class XhsClient:
         self._page.goto(publish_url, wait_until="domcontentloaded", timeout=30000)
         self._human_wait(3, 5)
 
+        # Creator publishing may require an additional login session.
+        for frame in self._page.frames:
+            frame_url = (frame.url or "").lower()
+            if "creator.xiaohongshu.com/login" in frame_url:
+                raise LoginError(
+                    "Creator platform login required for publishing. "
+                    "Please log in at https://creator.xiaohongshu.com first."
+                )
+
         # Step 1: Upload images via file input.
         # The creator page has a hidden <input type="file"> for image upload.
         file_input_selectors = [
             'input[type="file"]',
+            '[type="file"]',
             'input[accept*="image"]',
+            'input[accept*="image/*"]',
             '.upload-input',
             '#upload-input',
         ]
 
+        def _find_file_input():
+            # Search main page first
+            for sel in file_input_selectors:
+                el = self._page.query_selector(sel)
+                if el:
+                    return el
+            # Then search all iframes (creator console occasionally renders in frame)
+            for frame in self._page.frames:
+                for sel in file_input_selectors:
+                    try:
+                        el = frame.query_selector(sel)
+                    except Exception:
+                        el = None
+                    if el:
+                        return el
+            return None
+
         file_input = None
-        for sel in file_input_selectors:
-            file_input = self._page.query_selector(sel)
+        # Wait/retry loop for dynamic mount timing
+        for _ in range(6):
+            try:
+                self._page.wait_for_selector(
+                    'input[type="file"]',
+                    state="attached",
+                    timeout=2500,
+                )
+            except Exception:
+                pass
+            file_input = _find_file_input()
             if file_input:
                 break
+            self._human_wait(0.5, 1.2)
 
         if not file_input:
             # Try clicking the upload area to reveal a file input
@@ -888,10 +966,11 @@ class XhsClient:
                     break
 
             # Try again to find file input
-            for sel in file_input_selectors:
-                file_input = self._page.query_selector(sel)
+            for _ in range(4):
+                file_input = _find_file_input()
                 if file_input:
                     break
+                self._human_wait(0.5, 1.2)
 
         if not file_input:
             raise RuntimeError(
@@ -991,20 +1070,109 @@ class XhsClient:
 
                 page_text = self._page.text_content("body") or ""
                 current_url = self._page.url
+                note_id = (
+                    self._extract_note_id_from_url(current_url)
+                    or self._extract_note_id_from_page()
+                )
                 if self._is_publish_success(page_text, current_url):
                     logger.info("Note published successfully. Current URL: %s", current_url)
+                    if return_detail:
+                        return {"success": True, "note_id": note_id, "url": current_url}
                     return True
 
                 logger.warning(
                     "Publish button clicked but no success signal found. Current URL: %s",
                     current_url,
                 )
+                if return_detail:
+                    return {"success": False, "note_id": note_id, "url": current_url}
                 return False
 
         raise RuntimeError(
             "Cannot find publish button on the page. "
             "The page structure may have changed."
         )
+
+    # ===== Delete Note =====
+
+    def delete_note(self, note_id: str, xsec_token: str = "") -> bool:
+        """Delete a note by opening menu actions on the note page."""
+        self._navigate_to_note(note_id, xsec_token)
+
+        more_selectors = [
+            'button:has-text("...")',
+            '[aria-label*="更多"]',
+            '[class*="more"]',
+            '.more',
+            '.reds-icon.more',
+        ]
+        menu_opened = False
+        for sel in more_selectors:
+            el = self._page.query_selector(sel)
+            if not el:
+                continue
+            try:
+                el.click()
+                self._human_wait(0.8, 1.5)
+                menu_opened = True
+                break
+            except Exception:
+                continue
+
+        if not menu_opened:
+            logger.error("Failed to open note menu for delete action")
+            return False
+
+        delete_selectors = [
+            'button:has-text("删除")',
+            '[role="menuitem"]:has-text("删除")',
+            'text=删除',
+            '[class*="delete"]',
+        ]
+        delete_clicked = False
+        for sel in delete_selectors:
+            el = self._page.query_selector(sel)
+            if not el:
+                continue
+            try:
+                el.click()
+                self._human_wait(0.8, 1.5)
+                delete_clicked = True
+                break
+            except Exception:
+                continue
+
+        if not delete_clicked:
+            logger.error("Delete menu item not found/clickable for note %s", note_id)
+            return False
+
+        confirm_selectors = [
+            'button:has-text("确定")',
+            'button:has-text("确认")',
+            'button:has-text("删除")',
+            '.reds-button-primary',
+        ]
+        for sel in confirm_selectors:
+            el = self._page.query_selector(sel)
+            if not el:
+                continue
+            try:
+                el.click()
+                self._human_wait(2, 3)
+                break
+            except Exception:
+                continue
+
+        page_text = (self._page.text_content("body") or "").strip()
+        if "删除成功" in page_text or "已删除" in page_text:
+            return True
+
+        # If note page redirects away from the current note, treat as success.
+        current_url = self._page.url
+        if note_id and note_id not in current_url:
+            return True
+
+        return False
 
     # ===== Internal: Interaction helpers =====
 

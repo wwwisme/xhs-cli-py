@@ -84,6 +84,9 @@ xhs favorite <note_id> --undo
 
 # Comment
 xhs comment <note_id> "好棒！"
+
+# Delete your own note
+xhs delete <note_id>
 ```
 
 ### Favorites
@@ -98,6 +101,7 @@ xhs favorites --json
 
 ```bash
 xhs post "标题" --image photo1.jpg --image photo2.jpg --content "正文"
+xhs post "标题" --image photo1.jpg --content "正文" --json
 ```
 
 ### Account

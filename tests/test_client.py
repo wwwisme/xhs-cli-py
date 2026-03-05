@@ -69,6 +69,16 @@ class TestPublishResultHeuristic:
             "https://creator.xiaohongshu.com/publish/publish",
         )
 
+    def test_extract_note_id_from_explore_url(self):
+        note_id = XhsClient._extract_note_id_from_url("https://www.xiaohongshu.com/explore/abc123")
+        assert note_id == "abc123"
+
+    def test_extract_note_id_from_query(self):
+        note_id = XhsClient._extract_note_id_from_url(
+            "https://creator.xiaohongshu.com/publish/success?noteId=xyz987"
+        )
+        assert note_id == "xyz987"
+
 
 class TestGetUserInfoFallback:
     def test_returns_unwrapped_user_object_when_key_fields_missing(self, monkeypatch):

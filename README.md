@@ -14,7 +14,7 @@
 - **用户资料** — 查看用户信息、笔记、粉丝、关注
 - **推荐 Feed** — 获取探索页推荐内容
 - **话题** — 搜索话题标签
-- **互动** — 点赞/取消、收藏/取消、评论
+- **互动** — 点赞/取消、收藏/取消、评论、删除笔记
 - **发布** — 发布图文笔记
 - **认证** — 自动提取 Chrome cookie，或扫码登录
 - **JSON 输出** — 所有数据命令支持 `--json`
@@ -27,7 +27,7 @@
 | Auth | `login`, `logout`, `status`, `whoami` | 登录、退出、状态检查、查看个人资料 |
 | Read | `search`, `read`, `feed`, `topics` | 搜索笔记、阅读详情、推荐 Feed、搜索话题 |
 | Users | `user`, `user-posts`, `followers`, `following` | 查看资料、列出笔记/粉丝/关注 |
-| Engage | `like`, `unlike`, `comment` | 点赞、取消点赞、评论 |
+| Engage | `like`, `unlike`, `comment`, `delete` | 点赞、取消点赞、评论、删除笔记 |
 | Favorites | `favorite`, `unfavorite`, `favorites` | 收藏、取消收藏、查看收藏列表 |
 | Post | `post` | 发布图文笔记 |
 
@@ -71,7 +71,7 @@ uv sync
 ```
 
 默认只跑无副作用命令（`integration and not live_mutation`）。如需额外验证
-`like/favorite/comment/post`，显式开启：
+`like/favorite/comment/post/delete`，显式开启：
 
 ```bash
 XHS_SMOKE_MUTATION=1 ./scripts/smoke_local.sh
@@ -163,6 +163,9 @@ xhs favorite <note_id> --undo
 # 评论
 xhs comment <note_id> "好棒！"
 
+# 删除自己的笔记
+xhs delete <note_id>
+
 # 查看收藏列表
 xhs favorites
 xhs favorites --max 10
@@ -172,6 +175,7 @@ xhs favorites --max 10
 
 ```bash
 xhs post "标题" --image photo1.jpg --image photo2.jpg --content "正文内容"
+xhs post "标题" --image photo1.jpg --content "正文内容" --json
 ```
 
 ### 其他
@@ -232,6 +236,7 @@ clawhub install xiaohongshu-cli
 
 - Cookie 存储在 `~/.xhs-cli/cookies.json`，权限 `0600`。
 - `xhs status` 只检查本地已保存 cookie，不会触发浏览器 cookie 提取。
+- `xhs post` 可能要求额外登录创作平台（`https://creator.xiaohongshu.com`）。
 - 使用 headless Firefox，不会弹出浏览器窗口。
 - 首次运行需下载 camoufox 浏览器（`python -m camoufox fetch`）。
 - 用户资料查询需要内部 user_id（十六进制），不是小红书号。

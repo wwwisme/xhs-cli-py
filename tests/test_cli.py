@@ -31,7 +31,7 @@ class TestCliHelp:
         for cmd in ["login", "logout", "status", "whoami", "search", "read",
                      "feed", "topics", "user", "user-posts", "followers",
                      "following", "like", "unlike", "comment", "favorite",
-                     "unfavorite", "favorites", "post"]:
+                     "unfavorite", "favorites", "post", "delete"]:
             assert cmd in result.output, f"Command '{cmd}' not found in --help output"
 
     def test_search_help(self, runner):
@@ -44,6 +44,7 @@ class TestCliHelp:
         assert result.exit_code == 0
         assert "--image" in result.output
         assert "--content" in result.output
+        assert "--json" in result.output
 
     def test_favorites_help(self, runner):
         result = runner.invoke(cli, ["favorites", "--help"])

@@ -4,7 +4,7 @@ Usage:
     xhs login / logout / status / whoami
     xhs search / read / feed / topics
     xhs user / user-posts / followers / following
-    xhs like / unlike / comment
+    xhs like / unlike / comment / delete
     xhs favorite / unfavorite / favorites
     xhs post
 """
@@ -861,7 +861,8 @@ def favorites(max_count: int, as_json: bool):
 @click.option("--image", "images", multiple=True, required=True,
               type=click.Path(exists=True), help="Image file to upload (can be repeated)")
 @click.option("--content", default="", help="Note body/description text")
-def post(title: str, images: tuple[str, ...], content: str):
+@click.option("--json", "as_json", is_flag=True, help="Output publish result JSON")
+def post(title: str, images: tuple[str, ...], content: str, as_json: bool):
     """Publish a new image note.
 
     \b
@@ -881,9 +882,38 @@ def post(title: str, images: tuple[str, ...], content: str):
 
     try:
         with _get_client() as client:
-            ok = client.publish_note(title=title, image_paths=abs_paths, content=content)
+            result = client.publish_note(
+                title=title,
+                image_paths=abs_paths,
+                content=content,
+                return_detail=True,
+            )
+            if isinstance(result, dict):
+                ok = bool(result.get("success", False))
+                note_id = str(result.get("note_id", ""))
+            else:
+                ok = bool(result)
+                note_id = ""
+
+            if as_json:
+                click.echo(
+                    json.dumps(
+                        {"success": ok, "note_id": note_id},
+                        indent=2,
+                        ensure_ascii=False,
+                    )
+                )
+                if not ok:
+                    sys.exit(1)
+                return
+
             if ok:
-                console.print("[green]✅ Note published successfully![/green]")
+                if note_id:
+                    console.print(
+                        f"[green]✅ Note published successfully! Note ID: {note_id}[/green]"
+                    )
+                else:
+                    console.print("[green]✅ Note published successfully![/green]")
             else:
                 console.print("[red]❌ Publish may have failed. Check your profile.[/red]")
                 sys.exit(1)
@@ -892,6 +922,26 @@ def post(title: str, images: tuple[str, ...], content: str):
         sys.exit(1)
     except Exception as e:
         console.print(f"[red]❌ Publish failed: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.argument("note_id")
+@click.option("--xsec-token", default="", help="xsec_token from search results")
+def delete(note_id: str, xsec_token: str):
+    """Delete a note by note ID."""
+    if not xsec_token:
+        xsec_token = load_xsec_token(note_id)
+    try:
+        with _get_client() as client:
+            ok = client.delete_note(note_id, xsec_token)
+            if ok:
+                console.print(f"[green]✅ Deleted {note_id}[/green]")
+            else:
+                console.print(f"[red]❌ Delete failed for {note_id}[/red]")
+                sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Delete failed: {e}[/red]")
         sys.exit(1)
 
 
