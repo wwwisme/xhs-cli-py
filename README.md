@@ -2,6 +2,9 @@
 
 **中文** | [English](README_EN.md)
 
+[![PyPI](https://img.shields.io/pypi/v/xhs-cli)](https://pypi.org/project/xhs-cli/)
+[![License](https://img.shields.io/github/license/jackwener/xhs-cli)](LICENSE)
+
 小红书命令行工具 — 在终端中搜索笔记、查看主页、点赞、收藏、评论。
 
 ## 功能
@@ -42,12 +45,6 @@ uv tool install xhs-cli
 pipx install xhs-cli
 ```
 
-安装后需要下载 camoufox 浏览器：
-
-```bash
-python -m camoufox fetch
-```
-
 <details>
 <summary>从源码安装（开发用）</summary>
 
@@ -55,7 +52,6 @@ python -m camoufox fetch
 git clone git@github.com:jackwener/xhs-cli.git
 cd xhs-cli
 uv sync
-uv run python -m camoufox fetch
 ```
 
 </details>
@@ -173,6 +169,34 @@ CLI (click) → XhsClient (camoufox 浏览器)
 3. **数据提取** — 从 `window.__INITIAL_STATE__` 提取结构化数据。
 4. **Token 缓存** — 搜索/Feed 后 `xsec_token` 自动缓存到 `~/.xhs-cli/token_cache.json`。
 5. **互动操作** — 点赞、收藏、评论通过点击真实 DOM 按钮实现。
+
+## 作为 AI Agent Skill 使用
+
+xhs-cli 自带 [`SKILL.md`](./SKILL.md)，让 AI Agent 能自动学习并使用本工具。
+
+### Claude Code / Antigravity
+
+```bash
+# 克隆到项目的 skills 目录
+mkdir -p .agents/skills
+git clone git@github.com:jackwener/xhs-cli.git .agents/skills/xhs-cli
+
+# 或者只复制 SKILL.md
+curl -o .agents/skills/xhs-cli/SKILL.md \
+  https://raw.githubusercontent.com/jackwener/xhs-cli/main/SKILL.md
+```
+
+添加后，支持 `.agents/skills/` 的 AI Agent 会自动发现并使用 xhs-cli 命令。
+
+### OpenClaw / ClawHub
+
+官方支持 [OpenClaw](https://openclaw.ai) 和 [ClawHub](https://docs.openclaw.ai/tools/clawhub) 生态。通过 ClawHub 安装：
+
+```bash
+clawhub install xiaohongshu-cli
+```
+
+安装后即可在 OpenClaw 中直接使用所有 xhs-cli 命令。
 
 ## 注意事项
 

@@ -2,6 +2,9 @@
 
 [中文](README.md) | **English**
 
+[![PyPI](https://img.shields.io/pypi/v/xhs-cli)](https://pypi.org/project/xhs-cli/)
+[![License](https://img.shields.io/github/license/jackwener/xhs-cli)](LICENSE)
+
 A command-line tool for [Xiaohongshu (小红书)](https://www.xiaohongshu.com) — search notes, view profiles, like, favorite, and comment, all from your terminal.
 
 ## Features
@@ -42,12 +45,6 @@ uv tool install xhs-cli
 pipx install xhs-cli
 ```
 
-Then download the camoufox browser:
-
-```bash
-python -m camoufox fetch
-```
-
 <details>
 <summary>Install from source (for development)</summary>
 
@@ -55,7 +52,6 @@ python -m camoufox fetch
 git clone git@github.com:jackwener/xhs-cli.git
 cd xhs-cli
 uv sync
-uv run python -m camoufox fetch
 ```
 
 </details>
@@ -173,6 +169,34 @@ Uses [camoufox](https://github.com/daijro/camoufox) (anti-fingerprint Firefox) t
 3. **Data Extraction** — Structured data is pulled from `window.__INITIAL_STATE__`.
 4. **Token Caching** — After search/feed, `xsec_token` is auto-cached to `~/.xhs-cli/token_cache.json`.
 5. **Interactions** — Like, favorite, and comment work by clicking actual DOM buttons.
+
+## Use as AI Agent Skill
+
+xhs-cli ships with a [`SKILL.md`](./SKILL.md) that teaches AI agents how to use it.
+
+### Claude Code / Antigravity
+
+```bash
+# Clone into your project's skills directory
+mkdir -p .agents/skills
+git clone git@github.com:jackwener/xhs-cli.git .agents/skills/xhs-cli
+
+# Or just copy the SKILL.md
+curl -o .agents/skills/xhs-cli/SKILL.md \
+  https://raw.githubusercontent.com/jackwener/xhs-cli/main/SKILL.md
+```
+
+Once added, AI agents that support the `.agents/skills/` convention will automatically discover and use xhs-cli commands.
+
+### OpenClaw / ClawHub
+
+Officially supports [OpenClaw](https://openclaw.ai) and [ClawHub](https://docs.openclaw.ai/tools/clawhub). Install via ClawHub:
+
+```bash
+clawhub install xiaohongshu-cli
+```
+
+All xhs-cli commands are available in OpenClaw after installation.
 
 ## Notes
 
