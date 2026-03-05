@@ -7,7 +7,7 @@ name = "xhs-cli"
 version = "0.1.1"
 description = "A CLI for Xiaohongshu (小红书) — search, read notes, view profiles"
 readme = "README.md"
-license = "Apache-2.0"
+license = { file = "LICENSE" }
 requires-python = ">=3.8"
 authors = [{ name = "jackwener", email = "jakevingoo@gmail.com" }]
 keywords = ["xiaohongshu", "xhs", "cli", "redbook", "小红书"]

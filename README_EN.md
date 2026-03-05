@@ -7,6 +7,11 @@
 
 A command-line tool for [Xiaohongshu (小红书)](https://www.xiaohongshu.com) — search notes, view profiles, like, favorite, and comment, all from your terminal.
 
+## Recommended Projects
+
+- [twitter-cli](https://github.com/jackwener/twitter-cli) - A CLI tool for X/Twitter workflows
+- [bilibili-cli](https://github.com/jackwener/bilibili-cli) - A CLI tool for Bilibili workflows
+
 ## Features
 
 - **Search** — search notes by keyword with rich table output
