@@ -1,4 +1,7 @@
-# xhs-cli(弃用，请使用逆向的版本)
+# xhs-cli(不再维护)
+
+[xiaohongshu-cli](https://github.com/jackwener/xiaohongshu-cli) 这是逆向 API 出来的版本。
+速度更加快更加稳定。但是风控上应该不如当前这个直接用浏览器操作真实。
 
 **中文** | [English](README_EN.md)
 
