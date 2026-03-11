@@ -1,4 +1,4 @@
-# xhs-cli
+# xhs-cli(弃用，请使用逆向的版本)
 
 **中文** | [English](README_EN.md)
 
