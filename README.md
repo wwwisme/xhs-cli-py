@@ -220,16 +220,23 @@ CLI (click) → XhsClient (camoufox 浏览器)
 
 xhs-cli 自带 [`SKILL.md`](./SKILL.md)，让 AI Agent 能自动学习并使用本工具。
 
-### Claude Code / Antigravity
+### [Skills CLI](https://github.com/vercel-labs/skills)（推荐）
 
 ```bash
-# 克隆到项目的 skills 目录
+npx skills add jackwener/xhs-cli
+```
+
+| 参数 | 说明 |
+| --- | --- |
+| `-g` | 全局安装（用户级别，跨项目共享） |
+| `-a claude-code` | 指定目标 Agent |
+| `-y` | 非交互模式 |
+
+### 手动安装
+
+```bash
 mkdir -p .agents/skills
 git clone git@github.com:jackwener/xhs-cli.git .agents/skills/xhs-cli
-
-# 或者只复制 SKILL.md
-curl -o .agents/skills/xhs-cli/SKILL.md \
-  https://raw.githubusercontent.com/jackwener/xhs-cli/main/SKILL.md
 ```
 
 添加后，支持 `.agents/skills/` 的 AI Agent 会自动发现并使用 xhs-cli 命令。
